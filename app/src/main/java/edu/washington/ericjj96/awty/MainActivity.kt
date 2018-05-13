@@ -6,9 +6,13 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.pm.PackageManager
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import android.os.SystemClock
+import android.support.v4.app.ActivityCompat
+import android.support.v4.content.ContextCompat
+import android.telephony.SmsManager
 import android.util.Log
 import android.widget.Toast
 import kotlinx.android.synthetic.main.activity_main.*
@@ -19,6 +23,19 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.SEND_SMS) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, arrayOf(android.Manifest.permission.SEND_SMS), 1)
+        } else {
+            startProgram()
+        }
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        startProgram()
+    }
+
+    fun startProgram() {
         btnStart.setOnClickListener {
             when {
                 messageText.text.toString().isEmpty() -> errorMessage("Must enter a message")
@@ -34,6 +51,7 @@ class MainActivity : AppCompatActivity() {
                         }
                         val intent = Intent("edu.washington.ericjj96.awty").apply {
                             putExtra("message", "${phoneNumber}: ${messageText.text}")
+                            putExtra("phoneNum", "${phoneNumber}")
                         }
                         val intentFilter = IntentFilter("edu.washington.ericjj96.awty")
                         registerReceiver(Receiver(), intentFilter)
@@ -55,8 +73,6 @@ class MainActivity : AppCompatActivity() {
                     }
             }
         }
-
-
     }
 
     private fun errorMessage(message: String) {
@@ -65,6 +81,11 @@ class MainActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
+        unregisterReceiver(Receiver())
+    }
+
+    override fun onStop() {
+        super.onStop()
         unregisterReceiver(Receiver())
     }
 
@@ -78,6 +99,9 @@ class MainActivity : AppCompatActivity() {
 class Receiver: BroadcastReceiver() {
     override fun onReceive(context: Context?, intent: Intent?) {
         val msg = intent?.getStringExtra("message")
+        val phoneNum = intent?.getStringExtra("phoneNum")
+        val manager = SmsManager.getDefault()
+        manager.sendTextMessage(phoneNum, null, msg, null, null)
         Log.i("Broadcasting: ", "$msg")
         Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
     }
