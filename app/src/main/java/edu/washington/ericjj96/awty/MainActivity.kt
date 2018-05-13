@@ -20,37 +20,48 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         btnStart.setOnClickListener {
-            if (validateButton()) {
-                val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
+            when {
+                messageText.text.toString().isEmpty() -> errorMessage("Must enter a message")
+                numberText.text.toString().isEmpty() -> errorMessage("Must enter a phone number")
+                minuteText.text.toString().isEmpty() -> errorMessage("Must enter a time (in minutes)")
+                minuteText.text.toString().toInt() < 1 -> errorMessage("Time cannot be 0 or a negative integer")
+                else ->
+                    if (validateButton()) {
+                        val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
 //                val intent = Intent(this, Receiver::class.java)
 //                intent.putExtra("message", "${numberText.text}: ${messageText.text}")
-                val intent = Intent("edu.washington.ericjj96.awty").apply {
-                    putExtra("message", "${numberText.text}: ${messageText.text}")
-                }
-                val intentFilter = IntentFilter("edu.washington.ericjj96.awty")
-                registerReceiver(Receiver(), intentFilter)
-                val pendingIntent = PendingIntent.getBroadcast(this, 0, intent, 0)
-                Log.i("WHAT","${numberText.text}: ${messageText.text}" )
+                        val intent = Intent("edu.washington.ericjj96.awty").apply {
+                            putExtra("message", "${numberText.text}: ${messageText.text}")
+                        }
+                        val intentFilter = IntentFilter("edu.washington.ericjj96.awty")
+                        registerReceiver(Receiver(), intentFilter)
+                        val pendingIntent = PendingIntent.getBroadcast(this, 0, intent, 0)
+                        Log.i("WHAT", "${numberText.text}: ${messageText.text}")
 
-                if (btnStart.text == "Start") {
-                    Log.i("Working", "starting...")
-                    val time  = (minuteText.text.toString().toInt() * 60000).toLong()
-                    alarmManager.setRepeating(AlarmManager.ELAPSED_REALTIME_WAKEUP,
-                            SystemClock.elapsedRealtime() + time,
-                            time, pendingIntent)
-                    btnStart.text = "Stop"
-                } else {
-                    Log.i("Working", "stopping...")
-                    alarmManager.cancel(pendingIntent)
-                    btnStart.text = "Start"
-                }
-            } else {
-                Toast.makeText(this, "Can't have empty fields!", Toast.LENGTH_SHORT).show()
-                Log.i("error", "can't have empty fields")
+                        if (btnStart.text == "Start") {
+                            Log.i("Working", "starting...")
+                            val time = (minuteText.text.toString().toInt() * 60000).toLong()
+                            alarmManager.setRepeating(AlarmManager.ELAPSED_REALTIME_WAKEUP,
+                                    SystemClock.elapsedRealtime() + time,
+                                    time, pendingIntent)
+                            btnStart.text = "Stop"
+                        } else {
+                            Log.i("Working", "stopping...")
+                            alarmManager.cancel(pendingIntent)
+                            btnStart.text = "Start"
+                        }
+                    } else {
+                        Toast.makeText(this, "Can't have empty fields!", Toast.LENGTH_SHORT).show()
+                        Log.i("error", "can't have empty fields")
+                    }
             }
         }
 
 
+    }
+
+    private fun errorMessage(message: String) {
+        Toast.makeText(this, "Error: $message", Toast.LENGTH_SHORT).show()
     }
 
     override fun onDestroy() {
