@@ -5,9 +5,11 @@ import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import android.os.SystemClock
+import android.util.Log
 import android.widget.Toast
 import kotlinx.android.synthetic.main.activity_main.*
 
@@ -19,35 +21,54 @@ class MainActivity : AppCompatActivity() {
 
         btnStart.setOnClickListener {
             if (validateButton()) {
-                btnStart.text = "Stop"
-                val pendingIntent = PendingIntent.getBroadcast(this, 0, intent, 0)
                 val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
-                val intent = Intent(this, Receiver::class.java)
-                intent.putExtra("message", "${numberText.text}: ${messageText.text}")
-                if (btnStart.text == "Start") {
-                    btnStart.text = "Stop"
-                    val timeInterval  = (minuteText.text.toString().toInt() * 60000).toLong()
-                    alarmManager.setRepeating(AlarmManager.ELAPSED_REALTIME_WAKEUP, SystemClock.elapsedRealtime() + timeInterval, timeInterval, pendingIntent)
+//                val intent = Intent(this, Receiver::class.java)
+//                intent.putExtra("message", "${numberText.text}: ${messageText.text}")
+                val intent = Intent("edu.washington.ericjj96.awty").apply {
+                    putExtra("message", "${numberText.text}: ${messageText.text}")
+                }
+                val intentFilter = IntentFilter("edu.washington.ericjj96.awty")
+                registerReceiver(Receiver(), intentFilter)
+                val pendingIntent = PendingIntent.getBroadcast(this, 0, intent, 0)
+                Log.i("WHAT","${numberText.text}: ${messageText.text}" )
 
+                if (btnStart.text == "Start") {
+                    Log.i("Working", "starting...")
+                    val time  = (minuteText.text.toString().toInt() * 60000).toLong()
+                    alarmManager.setRepeating(AlarmManager.ELAPSED_REALTIME_WAKEUP,
+                            SystemClock.elapsedRealtime() + time,
+                            time, pendingIntent)
+                    btnStart.text = "Stop"
                 } else {
+                    Log.i("Working", "stopping...")
                     alarmManager.cancel(pendingIntent)
                     btnStart.text = "Start"
                 }
+            } else {
+                Toast.makeText(this, "Can't have empty fields!", Toast.LENGTH_SHORT).show()
+                Log.i("error", "can't have empty fields")
             }
         }
 
 
     }
 
+    override fun onDestroy() {
+        super.onDestroy()
+        unregisterReceiver(Receiver())
+    }
+
     fun validateButton(): Boolean {
         return !messageText.text.isEmpty() &&
                 !minuteText.text.isEmpty() && !numberText.text.isEmpty()
+                    && minuteText.text.toString().toInt() > 0
     }
 }
 
 class Receiver: BroadcastReceiver() {
     override fun onReceive(context: Context?, intent: Intent?) {
         val msg = intent?.getStringExtra("message")
+        Log.i("broadcasT", "$msg")
         Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
     }
 }
