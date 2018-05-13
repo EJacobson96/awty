@@ -28,25 +28,24 @@ class MainActivity : AppCompatActivity() {
                 else ->
                     if (validateButton()) {
                         val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
-//                val intent = Intent(this, Receiver::class.java)
-//                intent.putExtra("message", "${numberText.text}: ${messageText.text}")
+                        var phoneNumber = numberText.text.toString()
+                        if (phoneNumber.length == 10) {
+                            phoneNumber = "(" + phoneNumber.substring(0..2) + ") " + phoneNumber.substring(3..5) + "-" + phoneNumber.substring(6)
+                        }
                         val intent = Intent("edu.washington.ericjj96.awty").apply {
-                            putExtra("message", "${numberText.text}: ${messageText.text}")
+                            putExtra("message", "${phoneNumber}: ${messageText.text}")
                         }
                         val intentFilter = IntentFilter("edu.washington.ericjj96.awty")
                         registerReceiver(Receiver(), intentFilter)
                         val pendingIntent = PendingIntent.getBroadcast(this, 0, intent, 0)
-                        Log.i("WHAT", "${numberText.text}: ${messageText.text}")
 
                         if (btnStart.text == "Start") {
-                            Log.i("Working", "starting...")
                             val time = (minuteText.text.toString().toInt() * 60000).toLong()
                             alarmManager.setRepeating(AlarmManager.ELAPSED_REALTIME_WAKEUP,
                                     SystemClock.elapsedRealtime() + time,
                                     time, pendingIntent)
                             btnStart.text = "Stop"
                         } else {
-                            Log.i("Working", "stopping...")
                             alarmManager.cancel(pendingIntent)
                             btnStart.text = "Start"
                         }
@@ -79,7 +78,7 @@ class MainActivity : AppCompatActivity() {
 class Receiver: BroadcastReceiver() {
     override fun onReceive(context: Context?, intent: Intent?) {
         val msg = intent?.getStringExtra("message")
-        Log.i("broadcasT", "$msg")
+        Log.i("Broadcasting: ", "$msg")
         Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
     }
 }
